@@ -68,7 +68,10 @@
 
   health/HealthCheck
   (healthy? [this]
-    (= "PONG" (wcar conn (redis/ping)))))
+    (if (= "PONG" (wcar conn (redis/ping)))
+      true
+      (do (log/error "Redis health check failed!")
+          false))))
 
 ;;------------------------------------------------------------------------------
 ;; Creation

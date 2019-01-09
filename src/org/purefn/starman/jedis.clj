@@ -102,7 +102,10 @@
   health/HealthCheck
   (healthy? [this]
     (with-open [c (.getResource pool)]
-      (= "PONG" (.ping c)))))
+      (if (= "PONG" (.ping c))
+        true
+        (do (log/error "Redis health check failed!")
+            false)))))
 
 ;;------------------------------------------------------------------------------
 ;; Creation
