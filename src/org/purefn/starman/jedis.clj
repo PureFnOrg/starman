@@ -5,6 +5,7 @@
             [clojure.walk :refer [keywordize-keys]]
             [com.stuartsierra.component :as component]
             [org.purefn.bridges.protocol :as bridges]
+            [org.purefn.kurosawa.health :as health]
             [org.purefn.kurosawa.k8s :as k8s]
             [org.purefn.starman.common :as common]
             [taoensso.timbre :as log])
@@ -96,7 +97,12 @@
   bridges/Cache
   (expire [this ns k ttl]
     (with-open [c (.getResource pool)]
-      (.expire c (common/full-key ns k) ttl))))
+      (.expire c (common/full-key ns k) ttl)))
+
+  health/HealthCheck
+  (healthy? [this]
+    (with-open [c (.getResource pool)]
+      (= "PONG" (.ping c)))))
 
 ;;------------------------------------------------------------------------------
 ;; Creation

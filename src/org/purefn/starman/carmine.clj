@@ -8,8 +8,9 @@
             [clojure.walk :refer [keywordize-keys]]
             [com.stuartsierra.component :as component]
             [org.purefn.bridges.protocol :as bridges]
-            [org.purefn.starman.common :as common]
+            [org.purefn.kurosawa.health :as health]
             [org.purefn.kurosawa.k8s :as k8s]
+            [org.purefn.starman.common :as common]
             [taoensso.carmine :as redis :refer (wcar)]
             [taoensso.timbre :as log]))
 
@@ -63,7 +64,11 @@
 
   bridges/Cache
   (expire [this ns k ttl]
-    (= 1 (call-redis conn redis/expire ns k ttl))))
+    (= 1 (call-redis conn redis/expire ns k ttl)))
+
+  health/HealthCheck
+  (healthy? [this]
+    (= "PONG" (wcar conn (redis/ping)))))
 
 ;;------------------------------------------------------------------------------
 ;; Creation

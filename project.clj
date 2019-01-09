@@ -1,4 +1,4 @@
-(defproject org.purefn/starman "1.0.3-SNAPSHOT"
+(defproject org.purefn/starman "1.1.0-SNAPSHOT"
   :description "A Redis implementation of the Bridges protocols."
   :url "https://github.com/PureFnOrg/starman"
   :license {:name "Eclipse Public License"
@@ -11,9 +11,13 @@
                  [com.taoensso/timbre "4.8.0"]
                  [com.taoensso/carmine "2.14.0"]
                  [org.clojure/test.check "0.9.0"]
-                 [org.purefn/bridges "1.12.0"]
-                 [org.purefn/kurosawa.core "2.0.5"]
+                 [org.purefn/bridges "1.13.0"]
+                 [org.purefn/kurosawa.core "2.0.11"]
                  [redis.clients/jedis "2.9.0"]]
+
+  :deploy-repositories
+  [["releases" {:url "https://clojars.org/repo/" :creds :gpg}]]
+
   :profiles
   {:dev {:dependencies [[org.clojure/tools.namespace "0.2.11"]]
          :jvm-opts ["-Xmx6g"]
