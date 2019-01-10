@@ -1,4 +1,4 @@
-(defproject org.purefn/starman "1.1.0-SNAPSHOT"
+(defproject org.purefn/starman "1.1.0"
   :description "A Redis implementation of the Bridges protocols."
   :url "https://github.com/PureFnOrg/starman"
   :license {:name "Eclipse Public License"
