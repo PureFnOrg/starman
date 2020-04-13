@@ -113,12 +113,12 @@
 
 (defn default-config
   "k8s config based on env"
+  ([]
+   (default-config "redis"))
   ([name]
    (-> (k8s/config-map name)
        keywordize-keys
-       (rename-keys {:host ::host})))
-  ([]
-   (default-config "redis")))
+       (rename-keys {:host ::host}))))
 
 (defn redis
   "Creates a Redis component from a config."
