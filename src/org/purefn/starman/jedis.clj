@@ -8,9 +8,38 @@
             [org.purefn.kurosawa.health :as health]
             [org.purefn.kurosawa.k8s :as k8s]
             [org.purefn.starman.common :as common]
-            [taoensso.timbre :as log])
+            [taoensso.timbre :as log]
+            [taoensso.nippy :as nippy])
   (:import [java.util.concurrent ThreadLocalRandom]
            [redis.clients.jedis Jedis JedisPool JedisPoolConfig]))
+
+;;------------------------------------------------------------------------------
+;; Config
+;;------------------------------------------------------------------------------
+
+(defn- encoder
+  "Extracts encoder from config"
+  [config ns]
+  (get-in config [:namespaces ns ::encoder]))
+
+;;------------------------------------------------------------------------------
+;; Encoding
+;;------------------------------------------------------------------------------
+
+(defmulti encode (fn [encoder _] encoder))
+
+(defmethod encode :nippy [_ val]
+  (nippy/freeze val))
+
+(defmethod encode :default [_ val] val)
+
+(defmulti decode (fn [encoder blob] encoder))
+
+(defmethod decode :nippy [_ ^String s]
+  (-> (.getBytes s "UTF-8")
+      (nippy/thaw)))
+
+(defmethod decode :default [_ s] s)
 
 (defn- random-sleep
   [max-duration-ms]
@@ -29,18 +58,26 @@
         (random-sleep ms)
         (recur (inc cnt) (backoff ms))))))
 
+(defn- set*
+  [^Jedis c k v]
+  (if (bytes? v)
+    (.set c (.getBytes k) v)
+    (.set c k v)))
+
 (defn- swap-in*
   [{:keys [config ^JedisPool pool]} ns k f]
-  (with-open [c (.getResource pool)]
-    (let [fk (common/full-key ns k)
-          cur (.get c fk)
+  (with-open [^Jedis c (.getResource pool)]
+    (let [^String fk (common/full-key ns k)
+          cur (some->> (.get c fk) (decode (encoder config ns)))
           _ (.watch c (into-array String [fk]))
           t (.multi c)
-          _ (.set t fk (f cur))
+          _ (->> (f cur)
+                 (encode (encoder config ns))
+                 (set* t fk))
           res (.get t fk)]
       (if-not (seq (.exec t))
         (log/warn :temporary-failure "swap-in" :key fk :reason :cas-mismatch)
-        (.get res)))))
+        (some->> (.get res) (decode (encoder config ns)))))))
 
 ;;------------------------------------------------------------------------------
 ;; Component
@@ -63,7 +100,7 @@
 
   (stop [this]
     (if pool
-      (do 
+      (do
         (log/info "Stopping Redis (Jedis) client.")
         (.close pool)
         (dissoc this :pool))
@@ -72,7 +109,8 @@
   bridges/KeyValueStore
   (fetch [this ns k]
     (with-open [c (.getResource pool)]
-      (.get c (common/full-key ns k))))
+      (some->> (.get c (common/full-key ns k))
+               (decode (encoder config ns)))))
 
   (destroy [this ns k]
     (with-open [c (.getResource pool)]
@@ -92,7 +130,9 @@
 
   (write [this ns k value]
     (with-open [c (.getResource pool)]
-      (.set c (common/full-key ns k) value)))
+      (set* c
+            (common/full-key ns k)
+            (encode (encoder config ns) value))))
 
   bridges/Cache
   (expire [this ns k ttl]
@@ -128,12 +168,14 @@
                  ::port
                  ::max-total
                  ::max-retries
-                 ::busy-delay-ms]} config]
+                 ::busy-delay-ms
+                 ::namespaces]} config]
      (->RedisJedis {:host host
                     :port (or port common/default-port)
                     :max-total (or max-total common/default-max-total)
                     :max-retries (or max-retries 7)
-                    :busy-delay-ms (or busy-delay-ms 20)}
+                    :busy-delay-ms (or busy-delay-ms 20)
+                    :namespaces namespaces}
               nil))))
 
 ;;------------------------------------------------------------------------------
@@ -146,9 +188,15 @@
 
 (s/def ::max-total pos-int?)
 
+(s/def ::encoder #{:nippy})
+(s/def ::namespace-config (s/keys :req [::encoder]))
+(s/def ::namespace string?)
+(s/def ::namespaces (s/map-of ::namespace ::namespace-config))
+
 (s/def ::config (s/keys :req [::host]
                         :opt [::port
-                              ::max-total]))
+                              ::max-total
+                              ::namespaces]))
 
 (s/fdef redis
         :args (s/alt :0-arity (s/cat)
