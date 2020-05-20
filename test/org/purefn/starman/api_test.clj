@@ -74,7 +74,8 @@
     (testing "Full stress data set encodes correctly with Nippy"
       (let [data nippy/stress-data-comparable
             k "stress"]
-        (bridges/write (:jedis sys) nippy-ns k data)
+        (is (= (bridges/write (:jedis sys) nippy-ns k data)
+               data))
         (is (= (bridges/fetch (:jedis sys) nippy-ns k)
                data))
 
@@ -92,7 +93,8 @@
     (testing "Data set encodes correctly with edn"
       (let [data edn-stress-data
             k "stress"]
-        (bridges/write (:jedis sys) edn-ns k data)
+        (is (= (bridges/write (:jedis sys) edn-ns k data)
+               data))
         (is (= (bridges/fetch (:jedis sys) edn-ns k)
                data))
 
