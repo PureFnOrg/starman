@@ -175,7 +175,15 @@
        (rename-keys {:host ::host}))))
 
 (defn redis
-  "Creates a Redis component from a config."
+  "Creates a Redis component from a config.
+
+  * ::host          Redis host (required)
+  * ::port          Redis port (default 6379)
+  * ::max-total     Max total connections (default 32)
+  * ::max-retries   Max retries performed on swap-in failure (default 7)
+  * ::busy-delay-ms Milliseconds of backoff during retries (default 20)
+  * ::namespaces    Map of namespace strings to encoding config (optional)
+    * ::encoder     One of :nippy, :edn"
   ([]
     (redis (default-config)))
   ([config]
