@@ -78,16 +78,15 @@
   [{:keys [config ^JedisPool pool]} ns k f]
   (with-open [^Jedis c (.getResource pool)]
     (let [^String fk (common/full-key ns k)
-          cur (get-decoded c fk (encoder config ns))
+          enc (encoder config ns)
+          cur (get-decoded c fk enc)
           _ (.watch c (into-array String [fk]))
           t (.multi c)
-          _ (->> (f cur)
-                 (encode (encoder config ns))
-                 (set* t fk))
+          _ (->> (f cur) (encode enc) (set* t fk))
           res (.get t fk)]
       (if-not (seq (.exec t))
         (log/warn :temporary-failure "swap-in" :key fk :reason :cas-mismatch)
-        (get-decoded c fk (encoder config ns))))))
+        (get-decoded c fk enc)))))
 
 ;;------------------------------------------------------------------------------
 ;; Component
