@@ -11,7 +11,8 @@
             [taoensso.timbre :as log]
             [taoensso.nippy :as nippy])
   (:import [java.util.concurrent ThreadLocalRandom]
-           [redis.clients.jedis Jedis JedisPool JedisPoolConfig]))
+           [redis.clients.jedis Jedis JedisPool JedisPoolConfig]
+           (redis.clients.util SafeEncoder)))
 
 ;;------------------------------------------------------------------------------
 ;; Config
@@ -35,11 +36,11 @@
 
 (defmulti decode (fn [encoder blob] encoder))
 
-(defmethod decode :nippy [_ ^String s]
-  (-> (.getBytes s "UTF-8")
-      (nippy/thaw)))
+(defmethod decode :nippy [_ b]
+  (nippy/thaw b))
 
-(defmethod decode :default [_ s] s)
+(defmethod decode :default [_ ^bytes b]
+  (SafeEncoder/encode b))
 
 (defn- random-sleep
   [max-duration-ms]
@@ -58,6 +59,10 @@
         (random-sleep ms)
         (recur (inc cnt) (backoff ms))))))
 
+(defn- get*
+  [^Jedis c ^String k]
+  (.get c (.getBytes k)))
+
 (defn- set*
   [^Jedis c k v]
   (if (bytes? v)
@@ -74,7 +79,7 @@
           _ (->> (f cur)
                  (encode (encoder config ns))
                  (set* t fk))
-          res (.get t fk)]
+          res (get* t fk)]
       (if-not (seq (.exec t))
         (log/warn :temporary-failure "swap-in" :key fk :reason :cas-mismatch)
         (some->> (.get res) (decode (encoder config ns)))))))
@@ -109,7 +114,7 @@
   bridges/KeyValueStore
   (fetch [this ns k]
     (with-open [c (.getResource pool)]
-      (some->> (.get c (common/full-key ns k))
+      (some->> (get* c (common/full-key ns k))
                (decode (encoder config ns)))))
 
   (destroy [this ns k]
