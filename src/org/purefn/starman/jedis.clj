@@ -168,11 +168,12 @@
 
 (defn default-config
   "k8s config based on env"
-  []
-  (when (k8s/kubernetes?)
-    (-> (k8s/config-map "redis")
-        keywordize-keys
-        (rename-keys {:host ::host}))))
+  ([]
+   (default-config "redis"))
+  ([name]
+   (-> (k8s/config-map name)
+       keywordize-keys
+       (rename-keys {:host ::host}))))
 
 (defn redis
   "Creates a Redis component from a config."
