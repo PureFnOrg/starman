@@ -26,9 +26,9 @@
                             ::carmine/port 6379})
    :jedis (jedis/redis {::jedis/host "localhost"
                         ::jedis/namespaces {nippy-ns
-                                            {::jedis/encoder :nippy}
+                                            {:encoder :nippy}
                                             edn-ns
-                                            {::jedis/encoder :edn}}})))
+                                            {:encoder :edn}}})))
 
 (defn ttl-test
   [rd]
@@ -74,8 +74,7 @@
     (testing "Full stress data set encodes correctly with Nippy"
       (let [data nippy/stress-data-comparable
             k "stress"]
-        (is (= (bridges/write (:jedis sys) nippy-ns k data)
-               data))
+        (bridges/write (:jedis sys) nippy-ns k data)
         (is (= (bridges/fetch (:jedis sys) nippy-ns k)
                data))
 
@@ -93,8 +92,7 @@
     (testing "Data set encodes correctly with edn"
       (let [data edn-stress-data
             k "stress"]
-        (is (= (bridges/write (:jedis sys) edn-ns k data)
-               data))
+        (bridges/write (:jedis sys) edn-ns k data)
         (is (= (bridges/fetch (:jedis sys) edn-ns k)
                data))
 

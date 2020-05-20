@@ -146,8 +146,7 @@
     (with-open [c (.getResource pool)]
       (let [fk (common/full-key ns k)
             enc (encoder config ns)]
-        (set* c fk (encode enc value))
-        (get-decoded c fk enc))))
+        (set* c fk (encode enc value)))))
 
   bridges/Cache
   (expire [this ns k ttl]
