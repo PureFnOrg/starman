@@ -73,16 +73,16 @@
   [{:keys [config ^JedisPool pool]} ns k f]
   (with-open [^Jedis c (.getResource pool)]
     (let [^String fk (common/full-key ns k)
-          cur (some->> (.get c fk) (decode (encoder config ns)))
+          cur (some->> (get* c fk) (decode (encoder config ns)))
           _ (.watch c (into-array String [fk]))
           t (.multi c)
           _ (->> (f cur)
                  (encode (encoder config ns))
                  (set* t fk))
-          res (get* t fk)]
+          res (.get t fk)]
       (if-not (seq (.exec t))
         (log/warn :temporary-failure "swap-in" :key fk :reason :cas-mismatch)
-        (some->> (.get res) (decode (encoder config ns)))))))
+        (some->> (get* c fk) (decode (encoder config ns)))))))
 
 ;;------------------------------------------------------------------------------
 ;; Component
@@ -135,9 +135,9 @@
 
   (write [this ns k value]
     (with-open [c (.getResource pool)]
-      (set* c
-            (common/full-key ns k)
-            (encode (encoder config ns) value))))
+      (let [fk (common/full-key ns k)]
+        (set* c fk (encode (encoder config ns) value))
+        (some->> (get* c fk) (decode (encoder config ns))))))
 
   bridges/Cache
   (expire [this ns k ttl]
