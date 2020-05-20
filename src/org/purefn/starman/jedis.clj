@@ -12,7 +12,7 @@
             [taoensso.nippy :as nippy])
   (:import [java.util.concurrent ThreadLocalRandom]
            [redis.clients.jedis Jedis JedisPool JedisPoolConfig]
-           (redis.clients.util SafeEncoder)))
+           [redis.clients.util SafeEncoder]))
 
 ;;------------------------------------------------------------------------------
 ;; Config
@@ -34,13 +34,13 @@
 
 (defmethod encode :default [_ val] val)
 
-(defmulti decode (fn [encoder blob] encoder))
+(defmulti decode (fn [encoder ^bytes ba] encoder))
 
-(defmethod decode :nippy [_ b]
-  (nippy/thaw b))
+(defmethod decode :nippy [_ ^bytes ba]
+  (nippy/thaw ba))
 
-(defmethod decode :default [_ ^bytes b]
-  (SafeEncoder/encode b))
+(defmethod decode :default [_ ^bytes ba]
+  (SafeEncoder/encode ba))
 
 (defn- random-sleep
   [max-duration-ms]
