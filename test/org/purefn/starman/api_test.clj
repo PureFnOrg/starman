@@ -14,6 +14,11 @@
 (stest/instrument [`rand-in-range])
 
 (def nippy-ns "nns")
+(def edn-ns "ens")
+
+(def edn-stress-data
+  "Had some trouble with objects, and floats appear to be lossy"
+  (dissoc nippy/stress-data-comparable :queue :queue-empty :float))
 
 (def system
   (component/system-map
@@ -21,7 +26,9 @@
                             ::carmine/port 6379})
    :jedis (jedis/redis {::jedis/host "localhost"
                         ::jedis/namespaces {nippy-ns
-                                            {::jedis/encoder :nippy}}})))
+                                            {::jedis/encoder :nippy}
+                                            edn-ns
+                                            {::jedis/encoder :edn}}})))
 
 (defn ttl-test
   [rd]
@@ -74,5 +81,16 @@
         (bridges/destroy (:jedis sys) nippy-ns k)
 
         (is (nil? (bridges/fetch (:jedis sys) nippy-ns k)))))
+
+    (testing "Data set encodes correctly with edn"
+      (let [data edn-stress-data
+            k "stress"]
+        (bridges/write (:jedis sys) edn-ns k data)
+        (is (= (bridges/fetch (:jedis sys) edn-ns k)
+               data))
+
+        (bridges/destroy (:jedis sys) edn-ns k)
+
+        (is (nil? (bridges/fetch (:jedis sys) edn-ns k)))))
 
     (component/stop sys)))

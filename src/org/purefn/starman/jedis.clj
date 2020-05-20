@@ -32,12 +32,19 @@
 (defmethod encode :nippy [_ val]
   (nippy/freeze val))
 
+(defmethod encode :edn [_ val]
+  (pr-str val))
+
 (defmethod encode :default [_ val] val)
 
 (defmulti decode (fn [encoder ^bytes ba] encoder))
 
 (defmethod decode :nippy [_ ^bytes ba]
   (nippy/thaw ba))
+
+(defmethod decode :edn [_ ^bytes ba]
+  (-> (SafeEncoder/encode ba)
+      read-string))
 
 (defmethod decode :default [_ ^bytes ba]
   (SafeEncoder/encode ba))
@@ -60,7 +67,6 @@
         (recur (inc cnt) (backoff ms))))))
 
 (defn- get* ^bytes
-  "Returns value at given key as byte array"
   [^Jedis c ^String k]
   (.get c (.getBytes k)))
 
@@ -197,7 +203,7 @@
 
 (s/def ::max-total pos-int?)
 
-(s/def ::encoder #{:nippy})
+(s/def ::encoder #{:nippy :edn})
 (s/def ::namespace-config (s/keys :req [::encoder]))
 (s/def ::namespace string?)
 (s/def ::namespaces (s/map-of ::namespace ::namespace-config))
