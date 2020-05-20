@@ -59,7 +59,8 @@
         (random-sleep ms)
         (recur (inc cnt) (backoff ms))))))
 
-(defn- get*
+(defn- get* ^bytes
+  "Returns value at given key as byte array"
   [^Jedis c ^String k]
   (.get c (.getBytes k)))
 
