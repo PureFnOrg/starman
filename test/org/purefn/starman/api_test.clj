@@ -8,15 +8,20 @@
             [org.purefn.starman.jedis :as jedis]
             [org.purefn.starman :as api]
             [org.purefn.bridges.api :as bridges]
-            [org.purefn.bridges.cache.api :as cache]))
+            [org.purefn.bridges.cache.api :as cache]
+            [taoensso.nippy :as nippy]))
 
 (stest/instrument [`rand-in-range])
+
+(def nippy-ns "nns")
 
 (def system
   (component/system-map
    :carmine (carmine/redis {::carmine/host "localhost"
                             ::carmine/port 6379})
-   :jedis (jedis/redis {::jedis/host "localhost"})))
+   :jedis (jedis/redis {::jedis/host "localhost"
+                        ::jedis/namespaces {nippy-ns
+                                            {::jedis/encoder :nippy}}})))
 
 (defn ttl-test
   [rd]
@@ -58,5 +63,16 @@
 
     (testing "Bridges swap-in TTL with Jedis"
       (cache-test (:jedis sys)))
+
+    (testing "Full stress data set encodes correctly with Nippy"
+      (let [data nippy/stress-data-comparable
+            k "stress"]
+        (bridges/write (:jedis sys) nippy-ns k data)
+        (is (= (bridges/fetch (:jedis sys) nippy-ns k)
+               data))
+
+        (bridges/destroy (:jedis sys) nippy-ns k)
+
+        (is (nil? (bridges/fetch (:jedis sys) nippy-ns k)))))
 
     (component/stop sys)))
