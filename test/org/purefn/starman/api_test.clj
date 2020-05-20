@@ -80,6 +80,13 @@
 
         (bridges/destroy (:jedis sys) nippy-ns k)
 
+        (is (nil? (bridges/fetch (:jedis sys) nippy-ns k)))
+
+        (is (= (bridges/swap-in (:jedis sys) nippy-ns k (constantly data))
+               data))
+
+        (bridges/destroy (:jedis sys) nippy-ns k)
+
         (is (nil? (bridges/fetch (:jedis sys) nippy-ns k)))))
 
     (testing "Data set encodes correctly with edn"
@@ -87,6 +94,13 @@
             k "stress"]
         (bridges/write (:jedis sys) edn-ns k data)
         (is (= (bridges/fetch (:jedis sys) edn-ns k)
+               data))
+
+        (bridges/destroy (:jedis sys) edn-ns k)
+
+        (is (nil? (bridges/fetch (:jedis sys) edn-ns k)))
+
+        (is (= (bridges/swap-in (:jedis sys) nippy-ns k (constantly data))
                data))
 
         (bridges/destroy (:jedis sys) edn-ns k)

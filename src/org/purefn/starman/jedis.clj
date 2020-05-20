@@ -89,10 +89,10 @@
           _ (.watch c (into-array String [fk]))
           t (.multi c)
           _ (->> (f cur) (encode enc) (set* t fk))
-          res (.get t fk)]
+          res (.get t (.getBytes fk))]
       (if-not (seq (.exec t))
         (log/warn :temporary-failure "swap-in" :key fk :reason :cas-mismatch)
-        (get-decoded c fk enc)))))
+        (some->> (.get res) (decode enc))))))
 
 ;;------------------------------------------------------------------------------
 ;; Component
