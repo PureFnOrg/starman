@@ -46,13 +46,6 @@ high-volume ETLs which only use `GET`, `SET` and `DEL`.
 
 - Everything is stringly typed.
 
-#### TODO
-
-- Decide on serialization strategy.
-  - Similar to [lebowski](https://github.com/theladders/lebowski) with
-    declarative namespaces and encoding in the config?
-  - Something at runtime like carmine but not as bad?
-
 ## Development
 
 You can interact with the library in the REPL by typing in Emacs:
