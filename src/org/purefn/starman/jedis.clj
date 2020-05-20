@@ -21,7 +21,7 @@
 (defn- encoder
   "Extracts encoder from config"
   [config ns]
-  (get-in config [:namespaces ns ::encoder]))
+  (get-in config [:namespaces ns :encoder]))
 
 ;;------------------------------------------------------------------------------
 ;; Encoding
@@ -205,7 +205,7 @@
 (s/def ::max-total pos-int?)
 
 (s/def ::encoder #{:nippy :edn})
-(s/def ::namespace-config (s/keys :req [::encoder]))
+(s/def ::namespace-config (s/keys :req-un [::encoder]))
 (s/def ::namespace string?)
 (s/def ::namespaces (s/map-of ::namespace ::namespace-config))
 
