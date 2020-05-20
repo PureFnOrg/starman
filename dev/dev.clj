@@ -1,9 +1,12 @@
 (ns dev
   (:require [clojure.tools.namespace.repl :refer [refresh refresh-all]]
             [com.stuartsierra.component :as component]
+            [org.purefn.bridges.api :as bridges]
             [org.purefn.bridges.protocol :as proto]
             [org.purefn.starman.carmine :as carmine]
             [org.purefn.starman.jedis :as jedis]
+            [taoensso.nippy :as nippy]
+            [taoensso.nippy.encryption :as enc]
             [taoensso.timbre :as log]))
 
 (defn default-system
@@ -11,7 +14,8 @@
   (component/system-map
    :carmine (carmine/redis {::carmine/host "localhost"
                             ::carmine/port 6379})
-   :jedis (jedis/redis {::jedis/host "localhost"})))
+   :jedis (jedis/redis {::jedis/host "localhost"
+                        ::jedis/namespaces {"test" {::jedis/encoder :nippy}}})))
 
 (def system
   "A Var containing an object representing the application under

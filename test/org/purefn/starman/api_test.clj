@@ -8,15 +8,27 @@
             [org.purefn.starman.jedis :as jedis]
             [org.purefn.starman :as api]
             [org.purefn.bridges.api :as bridges]
-            [org.purefn.bridges.cache.api :as cache]))
+            [org.purefn.bridges.cache.api :as cache]
+            [taoensso.nippy :as nippy]))
 
 (stest/instrument [`rand-in-range])
+
+(def nippy-ns "nns")
+(def edn-ns "ens")
+
+(def edn-stress-data
+  "Had some trouble with objects, and floats appear to be lossy"
+  (dissoc nippy/stress-data-comparable :queue :queue-empty :float))
 
 (def system
   (component/system-map
    :carmine (carmine/redis {::carmine/host "localhost"
                             ::carmine/port 6379})
-   :jedis (jedis/redis {::jedis/host "localhost"})))
+   :jedis (jedis/redis {::jedis/host "localhost"
+                        ::jedis/namespaces {nippy-ns
+                                            {:encoder :nippy}
+                                            edn-ns
+                                            {:encoder :edn}}})))
 
 (defn ttl-test
   [rd]
@@ -58,5 +70,43 @@
 
     (testing "Bridges swap-in TTL with Jedis"
       (cache-test (:jedis sys)))
+
+    (testing "Full stress data set encodes correctly with Nippy"
+      (let [data nippy/stress-data-comparable
+            k "stress"]
+        (is (= (bridges/write (:jedis sys) nippy-ns k data)
+               data))
+        (is (= (bridges/fetch (:jedis sys) nippy-ns k)
+               data))
+
+        (bridges/destroy (:jedis sys) nippy-ns k)
+
+        (is (nil? (bridges/fetch (:jedis sys) nippy-ns k)))
+
+        (is (= (bridges/swap-in (:jedis sys) nippy-ns k (constantly data))
+               data))
+
+        (bridges/destroy (:jedis sys) nippy-ns k)
+
+        (is (nil? (bridges/fetch (:jedis sys) nippy-ns k)))))
+
+    (testing "Data set encodes correctly with edn"
+      (let [data edn-stress-data
+            k "stress"]
+        (is (= (bridges/write (:jedis sys) edn-ns k data)
+               data))
+        (is (= (bridges/fetch (:jedis sys) edn-ns k)
+               data))
+
+        (bridges/destroy (:jedis sys) edn-ns k)
+
+        (is (nil? (bridges/fetch (:jedis sys) edn-ns k)))
+
+        (is (= (bridges/swap-in (:jedis sys) nippy-ns k (constantly data))
+               data))
+
+        (bridges/destroy (:jedis sys) edn-ns k)
+
+        (is (nil? (bridges/fetch (:jedis sys) edn-ns k)))))
 
     (component/stop sys)))
