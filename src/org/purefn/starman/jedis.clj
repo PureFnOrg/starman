@@ -8,8 +8,8 @@
             [org.purefn.kurosawa.health :as health]
             [org.purefn.kurosawa.k8s :as k8s]
             [org.purefn.starman.common :as common]
-            [taoensso.timbre :as log]
-            [taoensso.nippy :as nippy])
+            [taoensso.nippy :as nippy]
+            [taoensso.timbre :as log])
   (:import [java.util.concurrent ThreadLocalRandom]
            [redis.clients.jedis Jedis JedisPool JedisPoolConfig]
            [redis.clients.util SafeEncoder]))
