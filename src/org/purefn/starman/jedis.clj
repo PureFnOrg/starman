@@ -228,7 +228,9 @@
 
 (s/def ::config (s/keys :req [::host]
                         :opt [::port
+                              ::max-idle
                               ::max-total
+                              ::connect-timeout-ms
                               ::namespaces]))
 
 (s/fdef redis
