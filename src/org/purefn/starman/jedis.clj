@@ -106,12 +106,15 @@
     (if pool
       (do (log/warn "Redis client (Jedis) has already been initialized.")
           this)
-      (let [{:keys [max-total host]} config]
+      (let [{:keys [max-total max-idle host port connect-timeout-ms]} config]
         (log/info "Initializing Redis (Jedis) connection pool for"
                   host)
         (assoc this :pool (JedisPool. (doto (JedisPoolConfig.)
-                                        (.setMaxTotal max-total))
-                                      host)))))
+                                        (.setMaxTotal max-total)
+                                        (.setMaxIdle max-idle))
+                                      host
+                                      port
+                                      connect-timeout-ms)))))
 
   (stop [this]
     (if pool
@@ -191,14 +194,18 @@
    (let [{:keys [::host
                  ::port
                  ::max-total
+                 ::max-idle
                  ::max-retries
+                 ::connect-timeout-ms
                  ::busy-delay-ms
                  ::namespaces]} config]
      (->RedisJedis {:host host
                     :port (or port common/default-port)
                     :max-total (or max-total common/default-max-total)
+                    :max-idle (or max-idle common/default-max-idle)
                     :max-retries (or max-retries 7)
                     :busy-delay-ms (or busy-delay-ms 20)
+                    :connect-timeout-ms (or connect-timeout-ms common/default-timeout)
                     :namespaces namespaces}
               nil))))
 
@@ -211,6 +218,8 @@
 (s/def ::port pos-int?)
 
 (s/def ::max-total pos-int?)
+(s/def ::max-idle pos-int?)
+(s/def ::connect-timeout-ms pos-int?)
 
 (s/def ::encoder #{:nippy :edn})
 (s/def ::namespace-config (s/keys :req-un [::encoder]))
