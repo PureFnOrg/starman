@@ -106,15 +106,15 @@
     (if pool
       (do (log/warn "Redis client (Jedis) has already been initialized.")
           this)
-      (let [{:keys [max-total max-idle host port connect-timeout-ms]} config]
-        (log/info "Initializing Redis (Jedis) connection pool for"
-                  host)
+      (let [{:keys [max-total max-idle host port timeout-ms]} config]
+        (log/info "Initializing Redis (Jedis) connection pool with"
+                  :config (dissoc config :namespaces))
         (assoc this :pool (JedisPool. (doto (JedisPoolConfig.)
                                         (.setMaxTotal max-total)
                                         (.setMaxIdle max-idle))
                                       host
                                       port
-                                      connect-timeout-ms)))))
+                                      timeout-ms)))))
 
   (stop [this]
     (if pool
@@ -184,7 +184,9 @@
   * ::host          Redis host (required)
   * ::port          Redis port (default 6379)
   * ::max-total     Max total connections (default 32)
+  * ::max-idle      Max number idle connections (default 8)
   * ::max-retries   Max retries performed on swap-in failure (default 7)
+  * ::timeout-ms    Connection timeout (default 2000ms)
   * ::busy-delay-ms Milliseconds of backoff during retries (default 20)
   * ::namespaces    Map of namespace strings to encoding config (optional)
     * ::encoder     One of :nippy, :edn"
@@ -196,7 +198,7 @@
                  ::max-total
                  ::max-idle
                  ::max-retries
-                 ::connect-timeout-ms
+                 ::timeout-ms
                  ::busy-delay-ms
                  ::namespaces]} config]
      (->RedisJedis {:host host
@@ -205,7 +207,7 @@
                     :max-idle (or max-idle common/default-max-idle)
                     :max-retries (or max-retries 7)
                     :busy-delay-ms (or busy-delay-ms 20)
-                    :connect-timeout-ms (or connect-timeout-ms common/default-timeout)
+                    :timeout-ms (or timeout-ms 2000)
                     :namespaces namespaces}
               nil))))
 
@@ -219,7 +221,7 @@
 
 (s/def ::max-total pos-int?)
 (s/def ::max-idle pos-int?)
-(s/def ::connect-timeout-ms pos-int?)
+(s/def ::timeout-ms pos-int?)
 
 (s/def ::encoder #{:nippy :edn})
 (s/def ::namespace-config (s/keys :req-un [::encoder]))
@@ -230,7 +232,7 @@
                         :opt [::port
                               ::max-idle
                               ::max-total
-                              ::connect-timeout-ms
+                              ::timeout-ms
                               ::namespaces]))
 
 (s/fdef redis

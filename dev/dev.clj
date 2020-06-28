@@ -16,8 +16,8 @@
                             ::carmine/port 6379})
    :jedis (jedis/redis {::jedis/host "localhost"
                         ::jedis/max-total 50
-                        ::jesis/max-idle 20
-                        ::jedis/connect-timeout-ms 3000
+                        ::jedis/max-idle 20
+                        ::jedis/timeout-ms 3000
                         ::jedis/namespaces {"test" {:encoder :nippy}}})))
 
 (def system

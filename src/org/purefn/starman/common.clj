@@ -9,8 +9,7 @@
 
 (def default-port 6379)
 (def default-max-total 32)
-(def default-max-idle 32)
-(def default-timeout 2000)
+(def default-max-idle 8)
 
 ;;------------------------------------------------------------------------------
 ;; Helpers
