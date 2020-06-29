@@ -15,7 +15,10 @@
    :carmine (carmine/redis {::carmine/host "localhost"
                             ::carmine/port 6379})
    :jedis (jedis/redis {::jedis/host "localhost"
-                        ::jedis/namespaces {"test" {::jedis/encoder :nippy}}})))
+                        ::jedis/max-total 50
+                        ::jedis/max-idle 20
+                        ::jedis/timeout-ms 3000
+                        ::jedis/namespaces {"test" {:encoder :nippy}}})))
 
 (def system
   "A Var containing an object representing the application under
